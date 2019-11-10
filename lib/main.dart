@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 void main() => runApp(MyApp());
 
@@ -26,16 +29,57 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  Future<Map<String, dynamic>> fetchData() async {
+    Future<Map<String, dynamic>> result;
+    http.Response response;
+
+    try {
+      response = await http.get(
+          'https://samples.openweathermap.org/data/2.5/weather?lat=35&lon=139&appid=b6907d289e10d714a6e88b30761fae22');
+      result = json.decode(response.body);
+    } catch (e) {
+      print(e);
+      result = null;
+    }
+
+    return result;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Center(
-          child: Text(
-        'Initial state',
-      )),
+      body: FutureBuilder(
+          future: fetchData(),
+          builder: (BuildContext context, AsyncSnapshot snapshot) {
+            if (snapshot.hasData == false) {
+              return Container();
+            }
+            return Column(
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    Text("좌표: "),
+                    Text(snapshot.data["coord"].toString()),
+                  ],
+                ),
+                Row(
+                  children: <Widget>[
+                    Text("날씨: "),
+                    Text(snapshot.data["weather"].toString()),
+                  ],
+                ),
+                Row(
+                  children: <Widget>[
+                    Text("바람: "),
+                    Text(snapshot.data["wind"].toString()),
+                  ],
+                ),
+              ],
+            );
+          }),
     );
   }
 }
