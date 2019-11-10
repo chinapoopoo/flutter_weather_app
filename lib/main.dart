@@ -1,7 +1,7 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'blocs/weather_bloc/bloc.dart';
 
 void main() => runApp(MyApp());
 
@@ -29,20 +29,18 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  Future<Map<String, dynamic>> fetchData() async {
-    Future<Map<String, dynamic>> result;
-    http.Response response;
+  WeatherBloc _weatherBloc = WeatherBloc();
 
-    try {
-      response = await http.get(
-          'https://samples.openweathermap.org/data/2.5/weather?lat=35&lon=139&appid=b6907d289e10d714a6e88b30761fae22');
-      result = json.decode(response.body);
-    } catch (e) {
-      print(e);
-      result = null;
-    }
+  @override
+  void initState() {
+    super.initState();
+    _weatherBloc.add(PageLoaded());
+  }
 
-    return result;
+  @override
+  void dispose() {
+    _weatherBloc.close();
+    super.dispose();
   }
 
   @override
@@ -51,35 +49,46 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: FutureBuilder(
-          future: fetchData(),
-          builder: (BuildContext context, AsyncSnapshot snapshot) {
-            if (snapshot.hasData == false) {
-              return Container();
-            }
-            return Column(
-              children: <Widget>[
-                Row(
-                  children: <Widget>[
-                    Text("좌표: "),
-                    Text(snapshot.data["coord"].toString()),
-                  ],
-                ),
-                Row(
-                  children: <Widget>[
-                    Text("날씨: "),
-                    Text(snapshot.data["weather"].toString()),
-                  ],
-                ),
-                Row(
-                  children: <Widget>[
-                    Text("바람: "),
-                    Text(snapshot.data["wind"].toString()),
-                  ],
-                ),
-              ],
-            );
-          }),
+      body: BlocListener(
+        bloc: _weatherBloc,
+        listener: (BuildContext context, WeatherState state) {
+//          if (state.moveToPageB == true) {
+//            Navigator.of(context).push(MaterialPageRoute(
+//                builder: (context) => BlocProvider(
+//                    builder: (BuildContext context) => _weatherBloc,
+//                    child: PageB())));
+//          }
+        },
+        child: BlocBuilder(
+            bloc: _weatherBloc,
+            builder: (BuildContext context, WeatherState state) {
+              if (state.main == "") {
+                return Container();
+              }
+              return Column(
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[
+                      Text("좌표: "),
+                      Text('${state.lon} ${state.lat}'),
+                    ],
+                  ),
+                  Row(
+                    children: <Widget>[
+                      Text("날씨: "),
+                      Text('${state.main} ${state.description}'),
+                    ],
+                  ),
+                  Row(
+                    children: <Widget>[
+                      Text("바람: "),
+                      Text('${state.speed}'),
+                    ],
+                  ),
+                ],
+              );
+            }),
+      ),
     );
   }
 }
